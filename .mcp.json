@@ -1,0 +1,7 @@
+{
+  "mcpServers": {
+    "zulip": {
+      "url": "http://localhost:3000/sse"
+    }
+  }
+}

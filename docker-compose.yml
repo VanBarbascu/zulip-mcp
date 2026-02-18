@@ -1,0 +1,11 @@
+services:
+  zulip-mcp:
+    build: .
+    image: zulip-mcp:latest
+    ports:
+      - "127.0.0.1:3000:3000"
+    environment:
+      - ZULIP_URL=${ZULIP_URL}
+      - ZULIP_EMAIL=${ZULIP_EMAIL}
+      - ZULIP_API_KEY=${ZULIP_API_KEY}
+      - ZULIP_NOTIFICATION_USER=${ZULIP_NOTIFICATION_USER}
