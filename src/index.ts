@@ -58,6 +58,15 @@ async function zulipRequest(
   return json;
 }
 
+async function handleToolCall(fn: () => Promise<unknown>) {
+  try {
+    const result = await fn();
+    return { content: [{ type: "text" as const, text: JSON.stringify(result, null, 2) }] };
+  } catch (err) {
+    return { content: [{ type: "text" as const, text: String(err) }], isError: true };
+  }
+}
+
 // --- MCP Server Factory ---
 
 function createServer(): McpServer {
@@ -98,24 +107,16 @@ server.tool(
       .describe("Whether to render message content as HTML"),
   },
   async ({ anchor, num_before, num_after, narrow, apply_markdown }) => {
-    try {
-      const params: Record<string, string> = {
-        anchor,
-        num_before: String(num_before),
-        num_after: String(num_after),
-        apply_markdown: String(apply_markdown),
-      };
-      if (narrow) {
-        params.narrow = narrow;
-      }
-      const result = await zulipRequest("GET", "/messages", params);
-      return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
-    } catch (err) {
-      return {
-        content: [{ type: "text", text: String(err) }],
-        isError: true,
-      };
+    const params: Record<string, string> = {
+      anchor,
+      num_before: String(num_before),
+      num_after: String(num_after),
+      apply_markdown: String(apply_markdown),
+    };
+    if (narrow) {
+      params.narrow = narrow;
     }
+    return handleToolCall(() => zulipRequest("GET", "/messages", params));
   },
 );
 
@@ -125,17 +126,7 @@ server.tool(
   "get_drafts",
   "Retrieve all drafts for the authenticated Zulip user.",
   {},
-  async () => {
-    try {
-      const result = await zulipRequest("GET", "/drafts");
-      return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
-    } catch (err) {
-      return {
-        content: [{ type: "text", text: String(err) }],
-        isError: true,
-      };
-    }
-  },
+  async () => handleToolCall(() => zulipRequest("GET", "/drafts")),
 );
 
 // --- Tool: create_drafts ---
@@ -157,19 +148,8 @@ server.tool(
       )
       .describe("Array of draft objects to create"),
   },
-  async ({ drafts }) => {
-    try {
-      const result = await zulipRequest("POST", "/drafts", {
-        drafts: JSON.stringify(drafts),
-      });
-      return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
-    } catch (err) {
-      return {
-        content: [{ type: "text", text: String(err) }],
-        isError: true,
-      };
-    }
-  },
+  async ({ drafts }) =>
+    handleToolCall(() => zulipRequest("POST", "/drafts", { drafts: JSON.stringify(drafts) })),
 );
 
 // --- Tool: edit_draft ---
@@ -188,19 +168,10 @@ server.tool(
       content: z.string().describe("Message content in Markdown"),
     }),
   },
-  async ({ draft_id, draft }) => {
-    try {
-      const result = await zulipRequest("PATCH", `/drafts/${draft_id}`, {
-        draft: JSON.stringify(draft),
-      });
-      return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
-    } catch (err) {
-      return {
-        content: [{ type: "text", text: String(err) }],
-        isError: true,
-      };
-    }
-  },
+  async ({ draft_id, draft }) =>
+    handleToolCall(() =>
+      zulipRequest("PATCH", `/drafts/${draft_id}`, { draft: JSON.stringify(draft) }),
+    ),
 );
 
 // --- Tool: delete_draft ---
@@ -211,17 +182,7 @@ server.tool(
   {
     draft_id: z.number().int().describe("ID of the draft to delete"),
   },
-  async ({ draft_id }) => {
-    try {
-      const result = await zulipRequest("DELETE", `/drafts/${draft_id}`);
-      return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
-    } catch (err) {
-      return {
-        content: [{ type: "text", text: String(err) }],
-        isError: true,
-      };
-    }
-  },
+  async ({ draft_id }) => handleToolCall(() => zulipRequest("DELETE", `/drafts/${draft_id}`)),
 );
 
 // --- Tool: send_notification ---
@@ -232,23 +193,14 @@ server.tool(
   {
     content: z.string().describe("Message content in Markdown"),
   },
-  async ({ content }) => {
-    try {
-      const result = await zulipRequest("POST", "/messages", {
+  async ({ content }) =>
+    handleToolCall(() =>
+      zulipRequest("POST", "/messages", {
         type: "direct",
         to: JSON.stringify([ZULIP_NOTIFICATION_USER]),
         content,
-      });
-      return {
-        content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
-      };
-    } catch (err) {
-      return {
-        content: [{ type: "text", text: String(err) }],
-        isError: true,
-      };
-    }
-  },
+      }),
+    ),
 );
 
   return server;
