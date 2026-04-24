@@ -120,6 +120,72 @@ server.tool(
   },
 );
 
+// --- Tool: get_message ---
+
+server.tool(
+  "get_message",
+  "Fetch a single Zulip message by its ID.",
+  {
+    message_id: z.number().int().describe("ID of the message to fetch"),
+    apply_markdown: z
+      .boolean()
+      .default(true)
+      .describe("Whether to render message content as HTML"),
+  },
+  async ({ message_id, apply_markdown }) =>
+    handleToolCall(() =>
+      zulipRequest("GET", `/messages/${message_id}`, {
+        apply_markdown: String(apply_markdown),
+      }),
+    ),
+);
+
+// --- Tool: get_streams ---
+
+server.tool(
+  "get_streams",
+  "List Zulip channels (streams) visible to the authenticated user.",
+  {
+    include_public: z
+      .boolean()
+      .default(true)
+      .describe("Include all public channels"),
+    include_subscribed: z
+      .boolean()
+      .default(true)
+      .describe("Include channels the user is subscribed to"),
+    include_all: z
+      .boolean()
+      .default(false)
+      .describe("Include all channels the user has metadata access to (all org channels for admins)"),
+    exclude_archived: z
+      .boolean()
+      .default(true)
+      .describe("Exclude archived channels"),
+  },
+  async ({ include_public, include_subscribed, include_all, exclude_archived }) =>
+    handleToolCall(() =>
+      zulipRequest("GET", "/streams", {
+        include_public: String(include_public),
+        include_subscribed: String(include_subscribed),
+        include_all: String(include_all),
+        exclude_archived: String(exclude_archived),
+      }),
+    ),
+);
+
+// --- Tool: get_topics ---
+
+server.tool(
+  "get_topics",
+  "List topics in a Zulip channel (stream) by its ID.",
+  {
+    stream_id: z.number().int().describe("ID of the channel"),
+  },
+  async ({ stream_id }) =>
+    handleToolCall(() => zulipRequest("GET", `/users/me/${stream_id}/topics`)),
+);
+
 // --- Tool: get_drafts ---
 
 server.tool(
