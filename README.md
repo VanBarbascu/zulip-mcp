@@ -7,6 +7,9 @@ An [MCP](https://modelcontextprotocol.io/) server that wraps the Zulip REST API,
 | Tool | Description |
 |------|-------------|
 | `get_messages` | Fetch messages from Zulip. Supports narrow filters (by stream, topic, sender), anchoring, and pagination via `num_before`/`num_after`. |
+| `get_message` | Fetch a single message by its ID. |
+| `get_streams` | List channels (streams) visible to the authenticated user. |
+| `get_topics` | List topics in a channel by its ID. |
 | `get_drafts` | Retrieve all drafts for the authenticated user. |
 | `create_drafts` | Create one or more message drafts (stream or private). |
 | `edit_draft` | Edit an existing draft by ID (type, recipient, topic, content). |
